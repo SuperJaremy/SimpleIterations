@@ -3,6 +3,7 @@ package edu;
 import java.io.Console;
 import java.util.ArrayList;
 import java.util.Arrays;
+import java.util.HashMap;
 import java.util.List;
 import java.util.function.Consumer;
 import java.util.function.ToDoubleFunction;
@@ -12,11 +13,13 @@ public class Algorithm {
     private final List<Double> errors;
     private double[] solution;
     private int counter;
+    private HashMap<Integer, List<Row>> weakPositions;
 
     public Algorithm(Matrix matrix) {
         solutions = new ArrayList<>();
         errors = new ArrayList<>();
         counter = 0;
+        weakPositions = new HashMap<>();
         solution = solve(matrix.getA(), matrix.getB(), matrix.getSize(), matrix.getEpsilon());
     }
 
@@ -73,12 +76,41 @@ public class Algorithm {
         if (!strict)
             return false;
         for (Row i : rows) {
-            if (i.strongPos > -1)
+            if (i.strongPos > -1 && order[i.strongPos]==-1) {
                 order[i.strongPos] = i.position;
+                for(Row j: weakPositions.get(i.strongPos)){
+                    j.weakPos.remove(Integer.valueOf(i.strongPos));
+                }
+                weakPositions.remove(i.strongPos);
+            }
         }
-        for (Row i : rows) {
-            if (i.weakPos > -1 && order[i.weakPos] == -1)
-                order[i.weakPos] = i.position;
+        for (int i = 0; i < size; i++) {
+            if (order[i] == -1) {
+                if (!weakPositions.containsKey(i))
+                    return false;
+                if (weakPositions.get(i).size() == 1)
+                    order[i] = weakPositions.get(i).get(0).position;
+                else {
+                    Row positionedRow = null;
+                    List<Row> positions = weakPositions.get(i);
+                    for (Row j : positions)
+                        if (j.weakPos.size() == 1) {
+                            order[i] = j.position;
+                            positionedRow = j;
+                            break;
+                        }
+                    if (positionedRow == null) {
+                        order[i] = weakPositions.get(i).get(0).position;
+                        positionedRow = weakPositions.get(i).get(0);
+                    }
+                    for (Row j : weakPositions.get(i)) {
+                        j.weakPos.remove(Integer.valueOf(i));
+                    }
+                    for (Integer j : weakPositions.keySet()) {
+                        weakPositions.get(j).remove(positionedRow);
+                    }
+                }
+            }
         }
         if (Arrays.stream(order).min().getAsInt() < 0)
             return false;
@@ -86,6 +118,7 @@ public class Algorithm {
             A[i] = rows[order[i]].row;
             b[i] = rows[order[i]].b;
         }
+ //       printMatrix(A,b,size);
         return true;
     }
 
@@ -131,11 +164,19 @@ public class Algorithm {
         return error <= epsilon;
     }
 
+    private void printMatrix(double[][] A, double[] b, int size) {
+        for (int i = 0; i < size; i++) {
+            for (int j = 0; j < size; j++)
+                System.out.print(A[i][j]+" ");
+            System.out.println(b[i]);
+        }
+    }
+
     private class Row {
         double[] row;
         double b;
         int strongPos = -1;
-        int weakPos = -1;
+        List<Integer> weakPos = null;
         int position;
         boolean strict = false;
 
@@ -156,8 +197,14 @@ public class Algorithm {
                 if (coefficient > sum) {
                     strongPos = i;
                     strict = true;
-                } else if (coefficient == sum)
-                    weakPos = i;
+                } else if (coefficient == sum) {
+                    if (weakPos == null)
+                        weakPos = new ArrayList<>();
+                    weakPos.add(i);
+                    if (!weakPositions.containsKey(i))
+                        weakPositions.put(i, new ArrayList<>());
+                    weakPositions.get(i).add(this);
+                }
             }
         }
     }

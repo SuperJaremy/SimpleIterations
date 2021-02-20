@@ -1,12 +1,9 @@
 package edu;
 
-import java.io.Console;
 import java.util.ArrayList;
 import java.util.Arrays;
 import java.util.HashMap;
 import java.util.List;
-import java.util.function.Consumer;
-import java.util.function.ToDoubleFunction;
 
 public class Algorithm {
     private final List<double[]> solutions;
@@ -76,11 +73,12 @@ public class Algorithm {
         if (!strict)
             return false;
         for (Row i : rows) {
-            if (i.strongPos > -1 && order[i.strongPos]==-1) {
+            if (i.strongPos > -1 && order[i.strongPos] == -1) {
                 order[i.strongPos] = i.position;
-                for(Row j: weakPositions.get(i.strongPos)){
-                    j.weakPos.remove(Integer.valueOf(i.strongPos));
-                }
+                if (weakPositions.containsKey(i.strongPos))
+                    for (Row j : weakPositions.get(i.strongPos)) {
+                        j.weakPos.remove(Integer.valueOf(i.strongPos));
+                    }
                 weakPositions.remove(i.strongPos);
             }
         }
@@ -118,7 +116,7 @@ public class Algorithm {
             A[i] = rows[order[i]].row;
             b[i] = rows[order[i]].b;
         }
- //       printMatrix(A,b,size);
+//               printMatrix(A,b,size);
         return true;
     }
 
@@ -167,8 +165,8 @@ public class Algorithm {
     private void printMatrix(double[][] A, double[] b, int size) {
         for (int i = 0; i < size; i++) {
             for (int j = 0; j < size; j++)
-                System.out.print(A[i][j]+" ");
-            System.out.println(b[i]);
+                System.out.print(A[i][j] + " ");
+            System.out.println("| "+b[i]);
         }
     }
 
